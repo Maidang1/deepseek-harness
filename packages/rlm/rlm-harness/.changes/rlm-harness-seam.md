@@ -1,0 +1,1 @@
+- Added `@deepseek-ai/dsh-rlm-harness`: the `ctx.rlmHarness` capability seam for harness state and refinement history.

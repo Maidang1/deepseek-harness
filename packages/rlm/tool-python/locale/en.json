@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Python Tool",
+    "description": "Give the model one persistent Python REPL that keeps its variables across calls."
+  }
+}

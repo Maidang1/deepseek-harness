@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM 宿主绑定",
+    "description": "面向组合内的 subagent、llm 与 session-query 服务，应答 RLM Python 运行时的子代理、模型与进度 host 请求。"
+  }
+}

@@ -1,0 +1,2 @@
+- Added `@deepseek-ai/dsh-rlm-kernel`: the `ctx.rlmKernel` capability seam for one persistent Python REPL per agent session.
+- Added `RlmKernel.registerHostRequestHandlers`, letting a plugin answer the runtime's `host_request` types for every kernel in a composition.

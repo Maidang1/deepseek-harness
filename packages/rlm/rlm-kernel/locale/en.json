@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM Kernel",
+    "description": "Persistent Python REPL kernel capability seam shared by kernel providers and their tool consumers."
+  }
+}

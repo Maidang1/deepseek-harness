@@ -1,0 +1,1 @@
+- Added `@deepseek-ai/dsh-tool-python`: a `python` tool that runs one code cell per call in the session's persistent Python interpreter.

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Python 工具",
+    "description": "为模型提供一个持久 Python REPL，变量在多次调用之间保留。"
+  }
+}

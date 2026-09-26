@@ -1,0 +1,15 @@
+# Persistent Python REPL kernel bundle layer. Insert the kernel service
+# provider beside the tool registry; later bundle patches and the user's
+# profile cordis.patch.yml address these rows by id, with the last write
+# winning per row.
+
+- insert:
+    - id: rlm-kernel-python
+      name: '@deepseek-ai/dsh-rlm-kernel-python'
+      inject: [agents]
+      config:
+        pythonBin: python3
+        pythonPath: []
+        maxOutputChars: 65536
+        startupTimeoutMs: 30000
+        shutdownGraceMs: 3000

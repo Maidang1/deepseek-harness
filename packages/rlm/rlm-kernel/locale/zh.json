@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM 内核",
+    "description": "持久 Python REPL 内核能力缝，供内核提供方及其工具消费方共用。"
+  }
+}

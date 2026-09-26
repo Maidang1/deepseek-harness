@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM 内核（CPython）",
+    "description": "为每个 agent 会话运行一个持久 CPython 解释器，为 `python` 工具提供内核。"
+  }
+}

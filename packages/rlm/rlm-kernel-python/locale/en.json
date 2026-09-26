@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM Kernel (CPython)",
+    "description": "Run one persistent CPython interpreter per agent session for the `python` tool."
+  }
+}

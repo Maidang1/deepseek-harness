@@ -1,0 +1,1 @@
+- Added `@deepseek-ai/dsh-rlm-bindings`: host-side bindings answering the RLM runtime's subagent spawn, model search, roster, collect, progress-note, and bash-notification host requests.

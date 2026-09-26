@@ -1,0 +1,11 @@
+# Host bindings for the RLM runtime's host requests. The row answers through
+# the kernel service plus the subagent, llm, and session-query services, so a
+# deployment that inserts this row without those providers fails loud at
+# startup rather than at first call.
+
+- insert:
+    - id: rlm-bindings
+      name: '@deepseek-ai/dsh-rlm-bindings'
+      inject: [rlmKernel, subagents, llm, sessionQuery]
+      config:
+        providerName: spawn

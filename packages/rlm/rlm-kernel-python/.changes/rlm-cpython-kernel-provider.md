@@ -1,0 +1,1 @@
+- Added `@deepseek-ai/dsh-rlm-kernel-python`: a CPython provider of the persistent-kernel seam, running one interpreter per agent session with the runtime bundled in the package.

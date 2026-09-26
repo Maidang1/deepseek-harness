@@ -36,6 +36,8 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
   'packages/util/launch-environment': 'The package only resolves host environment values; model-facing consumers own any rendered use.',
   'packages/util/workspace-path': 'The package only formats Workspace paths for browser UI; it never constructs model input.',
   'packages/util/values': 'The package only validates, snapshots, compares, freezes, or rejects caller-owned values; consumers own every model-facing use.',
+  'packages/rlm/rlm-kernel': 'The package is a model-agnostic registration and lifecycle primitive for one kernel per session; kernel consumers own every model-facing presentation.',
+  'packages/rlm/rlm-harness': 'The package is a model-agnostic state primitive for harness entries and refinement history; harness consumers own every model-facing presentation.',
 }
 
 /**
@@ -224,6 +226,8 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/web/web-fetch-http': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/web/web-search-exa': { kind: 'indirect', reason: 'The provider backend delegates model rendering to dsh-tool-web.' },
   'packages/workflow/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
+  'packages/rlm/rlm-kernel-python': { kind: 'indirect', reason: 'The provider drives a CPython subprocess; the python tool owns every model-facing rendering of a cell.' },
+  'packages/rlm/rlm-bindings': { kind: 'indirect', reason: 'The host bindings answer the Python runtime\'s host requests; the python tool owns every model-facing rendering of the returned data.' },
 }
 
 interface Failure {

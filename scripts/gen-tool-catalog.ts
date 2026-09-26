@@ -54,6 +54,8 @@ import TerminalSessionService from '@deepseek-ai/dsh-terminal'
 import * as ToolPty from '@deepseek-ai/dsh-tool-terminal'
 import * as ToolGoal from '@deepseek-ai/dsh-tool-goal'
 import * as ToolSchedule from '@deepseek-ai/dsh-schedule'
+import type { RlmKernel } from '@deepseek-ai/dsh-rlm-kernel'
+import * as ToolPython from '@deepseek-ai/dsh-tool-python'
 import Lsp from '@deepseek-ai/dsh-lsp'
 import * as ToolLsp from '@deepseek-ai/dsh-tool-lsp'
 import * as ToolSkill from '@deepseek-ai/dsh-tool-skill'
@@ -299,6 +301,23 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'The bash tool is the model-facing consumer of the bash executor seam. With a job registry composed every call registers with the generic `ctx.jobs` runtime as it starts, collected/stopped through the `job_*` tools from `@deepseek-ai/dsh-tool-jobs`; without one, or with `enableRunInBackground: false`, the tool registers a foreground-only schema without the `run_in_background` parameter.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-python',
+    dir: 'tool-python',
+    source: 'packages/rlm/tool-python/src/index.ts',
+    requires: ['ctx.tools', 'ctx.rlmKernel'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvest never starts an interpreter: the kernel provider's
+      // constructor resolves and probes the configured CPython, so the harvest
+      // provides the seam's service directly and never loads
+      // `@deepseek-ai/dsh-rlm-kernel-python`.
+      ctx.provide('rlmKernel', {} as RlmKernel)
+      await ctx.plugin(ToolPython)
+    },
+    note:
+      'The python tool is the model-facing consumer of the persistent-kernel seam: one call runs one cell in the session\'s interpreter, whose namespace survives across turns. The `maxCodeChars` ceiling defaults to 100000 and the shipped kernel provider caps each captured channel at 65536 characters.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-present',

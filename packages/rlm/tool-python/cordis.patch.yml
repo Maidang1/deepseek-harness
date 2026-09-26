@@ -1,0 +1,10 @@
+# Model-facing `python` tool layer. The row depends on the kernel service the
+# rlm-kernel-python bundle patch registers, so a deployment that inserts this
+# row without that one fails loud at startup rather than at first call.
+
+- insert:
+    - id: tool-python
+      name: '@deepseek-ai/dsh-tool-python'
+      inject: [tools, rlmKernel]
+      config:
+        maxCodeChars: 100000

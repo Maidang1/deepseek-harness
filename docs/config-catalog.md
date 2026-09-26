@@ -2339,6 +2339,48 @@ export interface Config {
 
 Source: [`packages/guard/repeat-tool-reminder/src/index.ts:35`](../packages/guard/repeat-tool-reminder/src/index.ts)
 
+<a id="deepseek-aidsh-rlm-bindings"></a>
+
+## `@deepseek-ai/dsh-rlm-bindings`
+
+Requires: `rlmKernel` · `subagents` · `llm` · `sessionQuery`
+
+```ts config-catalog
+/** Plugin configuration for the RLM host bindings. */
+export interface Config {
+  /** Registry name of the continuable spawn provider children are created through. */
+  providerName?: string
+  /** DSH home directory override; empty resolves through `DSH_HOME` or `~/.dsh`. */
+  dshHome?: string
+}
+```
+
+Source: [`packages/rlm/rlm-bindings/src/index.ts:23`](../packages/rlm/rlm-bindings/src/index.ts)
+
+<a id="deepseek-aidsh-rlm-kernel-python"></a>
+
+## `@deepseek-ai/dsh-rlm-kernel-python`
+
+```ts config-catalog
+/** Validated plugin configuration; every cap is changeable from `cordis.yml`. */
+export interface Config {
+  /** CPython command: an absolute path or a bare name resolved through `PATH`. */
+  pythonBin: Volatile<string>
+  /** Extra directories on the child interpreter's module search path. */
+  pythonPath: Volatile<readonly string[]>
+  /** Per-channel capture cap in characters. */
+  maxOutputChars: Volatile<number>
+  /** Ceiling on the startup handshake in milliseconds. */
+  startupTimeoutMs: Volatile<number>
+  /** Grace period between `shutdown` and SIGKILL in milliseconds. */
+  shutdownGraceMs: Volatile<number>
+}
+```
+
+Depends on: `Volatile` (`@deepseek-ai/cordis`)
+
+Source: [`packages/rlm/rlm-kernel-python/src/index.ts:66`](../packages/rlm/rlm-kernel-python/src/index.ts)
+
 <a id="deepseek-aidsh-sandbox-local"></a>
 
 ## `@deepseek-ai/dsh-sandbox-local`
@@ -3541,6 +3583,22 @@ export interface Config {
 
 Source: [`packages/shell/tool-pwsh-persistent/src/index.ts:455`](../packages/shell/tool-pwsh-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-python"></a>
+
+## `@deepseek-ai/dsh-tool-python`
+
+Requires: `rlmKernel` · `tools`
+
+```ts config-catalog
+/** Model-facing configuration for the `python` tool. */
+export interface Config {
+  /** Maximum number of characters one call's `code` may carry. */
+  maxCodeChars?: number
+}
+```
+
+Source: [`packages/rlm/tool-python/src/index.ts:26`](../packages/rlm/tool-python/src/index.ts)
+
 <a id="deepseek-aidsh-tool-ralph"></a>
 
 ## `@deepseek-ai/dsh-tool-ralph`
@@ -4222,6 +4280,8 @@ Abstract service classes — a deployment loads a concrete implementation packag
 - `@deepseek-ai/dsh-host-directory-picker` — abstract `DirectoryPicker` ([`packages/host/directory-picker/src/index.ts`](../packages/host/directory-picker/src/index.ts))
 - `@deepseek-ai/dsh-jobs` — abstract `JobRegistry` ([`packages/jobs/jobs/src/index.ts`](../packages/jobs/jobs/src/index.ts))
 - `@deepseek-ai/dsh-ptc-runtime` — abstract `PtcRuntime` ([`packages/ptc-runtime/ptc-runtime/src/index.ts`](../packages/ptc-runtime/ptc-runtime/src/index.ts))
+- `@deepseek-ai/dsh-rlm-harness` — abstract `HarnessRefiner` ([`packages/rlm/rlm-harness/src/index.ts`](../packages/rlm/rlm-harness/src/index.ts))
+- `@deepseek-ai/dsh-rlm-kernel` — abstract `RlmKernel` ([`packages/rlm/rlm-kernel/src/index.ts`](../packages/rlm/rlm-kernel/src/index.ts))
 - `@deepseek-ai/dsh-sandbox` — abstract `SandboxProvider` ([`packages/sandbox/sandbox/src/index.ts`](../packages/sandbox/sandbox/src/index.ts))
 - `@deepseek-ai/dsh-session-persistence` — abstract `SessionPersistence` ([`packages/session/session-persistence/src/index.ts`](../packages/session/session-persistence/src/index.ts))
 - `@deepseek-ai/dsh-session-query` — abstract `SessionQueryEngine` ([`packages/session-query/session-query/src/index.ts`](../packages/session-query/session-query/src/index.ts))
