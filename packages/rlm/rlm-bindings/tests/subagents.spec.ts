@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
+import type { Agent, Inbox } from '@deepseek-ai/dsh-agent'
+import { createInboxStub, unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { MessageId, ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { AssistantMessage, UserMessage } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, SessionSeq, SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
@@ -14,12 +14,13 @@ import type {
 } from '@deepseek-ai/dsh-subagent'
 import type { RlmHostReplyData, RlmHostRequestContext, RlmHostRequestEvent } from '@deepseek-ai/dsh-rlm-kernel'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
+import { BashNoticeBoard } from '../src/bash.ts'
 import { Roster } from '../src/roster.ts'
 import { createRlmHostHandlers } from '../src/subagents.ts'
 import type { ChildObservation, ObservationSource, RlmBindingDeps, RlmCollectRow, RlmSubagentRow, SubagentBackend } from '../src/subagents.ts'
 import type { ModelCatalog } from '../src/models.ts'
 
-function agent(id: string, options: Agent['options'] = {}): Agent {
+function agent(id: string, options: Agent['options'] = {}, inbox: Inbox = unsupportedInbox()): Agent {
   const session = Session.create(SessionId(id), [], {
     version: SESSION_FORMAT_VERSION, id: SessionId(id), createdAt: 0, cwd: '/repo', isSeeded: false,
   })
@@ -27,7 +28,7 @@ function agent(id: string, options: Agent['options'] = {}): Agent {
     id: SessionId(id),
     options,
     session,
-    inbox: unsupportedInbox(),
+    inbox,
     ctx: new Context(),
     status: 'idle',
     send: () => {},
@@ -115,6 +116,7 @@ function deps(overrides: Partial<RlmBindingDeps> = {}): RlmBindingDeps {
     roster: new Roster(),
     providerName: 'spawn',
     sessionDir: childId => `/sessions/${childId}`,
+    notices: new BashNoticeBoard(),
     ...overrides,
   }
 }
@@ -652,25 +654,65 @@ describe('rlm.delete_subagent', () => {
 })
 
 describe('bash notifications', () => {
-  it('acks a valid bash.completed and validates its payload', async () => {
-    const handlers = createRlmHostHandlers(deps())
+  it('steers a completion notice into the owning session and records it for withdrawal', async () => {
+    const owner = agent('s1')
+    const steered: Parameters<Agent['steer']>[0][] = []
+    owner.steer = (message) => { steered.push(message) }
+    const notices = new BashNoticeBoard()
+    const handlers = createRlmHostHandlers(deps({ notices }))
     const reply = await handlers['bash.completed']!(
       request({ type: 'bash.completed', pid: 3, command: 'ls', exitCode: 0 }),
-      contextFor(agent('p')),
+      contextFor(owner),
     )
     expect(reply).toEqual({ status: 'ok', result: {} })
-    await expect(
-      call(handlers['bash.completed']!, request({ type: 'bash.completed', pid: -1, command: 'ls', exitCode: 0 }), contextFor(agent('p'))),
-    ).rejects.toThrow('bash.completed pid must be a positive integer')
+    expect(steered).toHaveLength(1)
+    expect(steered[0]!.content).toEqual([{ type: 'text', text: '[bash-done pid:3 exit:0]\n\nCommand: "ls"' }])
+    expect(steered[0]!.source).toEqual({ kind: 'rlm-bindings' })
+    expect(notices.takeEarliest('s1', 3, 'ls')).toBe(steered[0]!.id)
   })
 
-  it('acks a valid bash.consumed and validates its payload', async () => {
+  it('withdraws a pending notice when the kernel reads the result first', async () => {
+    const inbox = createInboxStub()
+    const owner = agent('s1', {}, inbox)
+    owner.steer = (message) => { inbox.append('next-step', message) }
+    const handlers = createRlmHostHandlers(deps())
+    await handlers['bash.completed']!(
+      request({ type: 'bash.completed', pid: 3, command: 'ls', exitCode: 0 }),
+      contextFor(owner),
+    )
+    expect(inbox.nextStep).toHaveLength(1)
+    const reply = await handlers['bash.consumed']!(
+      request({ type: 'bash.consumed', pid: 3, command: 'ls' }),
+      contextFor(owner),
+    )
+    expect(reply).toEqual({ status: 'ok', result: {} })
+    expect(inbox.nextStep).toHaveLength(0)
+  })
+
+  it('acknowledges a consumed result with nothing pending', async () => {
+    const inbox = createInboxStub()
+    const owner = agent('s1', {}, inbox)
     const handlers = createRlmHostHandlers(deps())
     const reply = await handlers['bash.consumed']!(
       request({ type: 'bash.consumed', pid: 3, command: 'ls' }),
-      contextFor(agent('p')),
+      contextFor(owner),
     )
     expect(reply).toEqual({ status: 'ok', result: {} })
+  })
+
+  it('validates the bash.completed payload before steering', async () => {
+    const owner = agent('s1')
+    const steered: Parameters<Agent['steer']>[0][] = []
+    owner.steer = (message) => { steered.push(message) }
+    const handlers = createRlmHostHandlers(deps())
+    await expect(
+      call(handlers['bash.completed']!, request({ type: 'bash.completed', pid: -1, command: 'ls', exitCode: 0 }), contextFor(owner)),
+    ).rejects.toThrow('bash.completed pid must be a positive integer')
+    expect(steered).toHaveLength(0)
+  })
+
+  it('validates the bash.consumed payload', async () => {
+    const handlers = createRlmHostHandlers(deps())
     await expect(
       call(handlers['bash.consumed']!, request({ type: 'bash.consumed', pid: 3, command: '' }), contextFor(agent('p'))),
     ).rejects.toThrow('bash.consumed command must be a non-empty string')

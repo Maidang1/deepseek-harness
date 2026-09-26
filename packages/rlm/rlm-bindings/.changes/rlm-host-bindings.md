@@ -1,1 +1,2 @@
 - Added `@deepseek-ai/dsh-rlm-bindings`: host-side bindings answering the RLM runtime's subagent spawn, model search, roster, collect, progress-note, and bash-notification host requests.
+- Changed the `bash.completed` binding to steer a completion notice into the owning session, and `bash.consumed` to withdraw the notice while it is still pending.

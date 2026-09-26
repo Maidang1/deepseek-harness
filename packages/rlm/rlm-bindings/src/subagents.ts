@@ -2,7 +2,8 @@
  * The nine host handlers answering the RLM Python runtime's `host_request`
  * types. Spawn-style requests drive `ctx.subagents`' continuable manager,
  * roster requests fold each child's session cut through `ctx.sessionQuery`,
- * and model search reads `ctx.llm`. Handler errors become error replies, so
+ * model search reads `ctx.llm`, and background-command completions steer a
+ * notice into the owning session. Handler errors become error replies, so
  * every validation message is model-facing text.
  *
  * @module @deepseek-ai/dsh-rlm-bindings/subagents
@@ -25,6 +26,8 @@ import type {
   RlmHostRequestEvent,
   RlmHostRequestHandlers,
 } from '@deepseek-ai/dsh-rlm-kernel'
+import { createBashCompletionMessage } from './bash.ts'
+import type { BashNoticeBoard } from './bash.ts'
 import { foldChildFacts, rlmActivityStaleMs } from './child-facts.ts'
 import type { ChildFacts } from './child-facts.ts'
 import { findRlmModels } from './models.ts'
@@ -100,6 +103,8 @@ export interface RlmBindingDeps {
   readonly providerName: string
   /** Display path a child's `session_dir` / `session_file` reports. */
   readonly sessionDir: (childId: string) => string
+  /** Pending background-command completion notices, per session. */
+  readonly notices: BashNoticeBoard
 }
 
 /** One `rlm.list_subagents` row, the kernel roster's wire shape. */
@@ -480,12 +485,17 @@ export function createRlmHostHandlers(deps: RlmBindingDeps): RlmHostRequestHandl
         : { accepted: false, retry_after_ms: result.retryAfterMs }))
     },
     'rlm.delete_subagent': (request, context) => runDelete(deps, request, context),
-    'bash.completed': (request) => {
-      bashCompletionField(request.data)
+    'bash.completed': (request, context) => {
+      const details = bashCompletionField(request.data)
+      const message = createBashCompletionMessage(details)
+      context.agent.steer(message)
+      deps.notices.record(String(context.agent.id), details.pid, details.command, message.id)
       return Promise.resolve(ok({}))
     },
-    'bash.consumed': (request) => {
-      bashConsumedField(request.data)
+    'bash.consumed': (request, context) => {
+      const details = bashConsumedField(request.data)
+      const messageId = deps.notices.takeEarliest(String(context.agent.id), details.pid, details.command)
+      if (messageId !== undefined) context.agent.inbox.remove(messageId)
       return Promise.resolve(ok({}))
     },
   }

@@ -46,7 +46,7 @@ kind: "package-reference"
 
 ### What the runtime can ask
 
-共应答九种请求类型。spawn 类请求校验载荷、同步预留兄弟间唯一的名字，并驱动一次 `startContinuable` 调用；roster 类请求读取父会话的直接子目录并折叠每个子会话的日志切面；两条 bash 通知只做确认。
+共应答九种请求类型。spawn 类请求校验载荷、同步预留兄弟间唯一的名字，并驱动一次 `startContinuable` 调用；roster 类请求读取父会话的直接子目录并折叠每个子会话的日志切面；后台命令完成时向所属会话 steer 一条通知，结果被读取时撤回仍在待发的通知。
 
 | Request type | Behavior |
 |---|---|
@@ -57,8 +57,8 @@ kind: "package-reference"
 | `rlm.collect` | 有界等待选中的子代理收敛；超时返回当前快照，绝不报错 |
 | `rlm.progress.note` | 记录一条来自子代理的、经节流的进度便签 |
 | `rlm.delete_subagent` | 释放一个已收敛的子代理；仍在运行的子代理被跳过而非删除 |
-| `bash.completed` | 校验并确认一条后台命令的完成 |
-| `bash.consumed` | 校验并确认一次结果读取 |
+| `bash.completed` | 向所属会话 steer 一条完成通知 |
+| `bash.consumed` | 内核先读到结果时，撤回仍在待发的通知 |
 
 ### What can go wrong
 
@@ -91,7 +91,8 @@ This section explains how the bindings are built; the observable behavior is ful
 | [`src/child-facts.ts`](src/child-facts.ts) | Pure folds from one child's events and timing projection to roster facts |
 | [`src/roster.ts`](src/roster.ts) | The process-local roster: name reservations, progress notes, activity stamps |
 | [`src/models.ts`](src/models.ts) | Model-catalog search: exact, prefix, and substring scoring over every provider |
-| [`src/subagents.ts`](src/subagents.ts) | The nine handlers: spawn, roster rows, collect polling, delete, acknowledgements |
+| [`src/subagents.ts`](src/subagents.ts) | The nine handlers: spawn, roster rows, collect polling, delete, completion notices |
+| [`src/bash.ts`](src/bash.ts) | Completion notices: message format, steer source, and the pending-notice board |
 | [`cordis.patch.yml`](cordis.patch.yml) | Bundle layer inserting the bindings beside the kernel and subagent services |
 | — | No runtime invariant companion is published; this package exposes no independent event sequence or mutable data relation beyond its own registration and handler calls. |
 
@@ -131,7 +132,7 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 - **The `cwd` spawn kwarg is unsupported** — `AgentOptions` 不携带工作目录，且 `startContinuable` 不透传会话元数据，因此 `rlm.create_session` 对任何 `cwd` 都以显式错误拒绝。
 - **`session_dir` and `session_file` are display paths** — 它们是 DSH home 下稳定、可读的位置，但不创建目录、不写文件；真实的会话日志布局是持久化 provider 的私事。
 - **No `activity` field on roster rows** — dsh 没有表达子代理当前活动种类的投影，因此行整体省略该字段；运行时把它当作可选。
-- **Bash notifications are acknowledged, not steered** — `bash.completed` 与 `bash.consumed` 只校验并回复，没有完成消息送达父会话。
+- **A delivered completion notice cannot be withdrawn** — `bash.consumed` 只在通知仍 pending 于收件箱时撤回它；一旦被某个 step 领取，模型可能读到一条它已经取过的结果的通知。
 - **Goal, compact, and MCP request types are unimplemented** — `goal.*`、`compact.*`、`model.info` 与 `mcp.*` 没有 handler，发出它们的运行时会得到内核响亮的我无 handler 错误。
 - **The roster is process-local** — 宿主重启会忘掉预留的名字、进度便签与活动戳；名字随后回落到目录标签，跨重启的两次同名 spawn 不会被拒绝。
 - **Roster reads cost one observation per child** — `rlm.list_subagents` 与 `rlm.collect` 要折叠每个直接子代理的会话切面，子代理很多的父会话每次调用都要付出多次读取。

@@ -13,6 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import type { SessionQueryEngine } from '@deepseek-ai/dsh-session-query'
+import { BashNoticeBoard } from './bash.ts'
 import { Roster } from './roster.ts'
 import { createRlmHostHandlers } from './subagents.ts'
 
@@ -53,6 +54,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     roster: new Roster(),
     providerName,
     sessionDir: (childId: string): string => join(resolveDshHome(dshHome), 'rlm', 'children', childId),
+    notices: new BashNoticeBoard(),
   }))
   ctx.effect(() => () => { withdraw() })
 }

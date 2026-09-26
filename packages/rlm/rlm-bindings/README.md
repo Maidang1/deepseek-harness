@@ -46,7 +46,7 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### What the runtime can ask
 
-Nine request types are answered. Spawn-style requests validate their payload, reserve a sibling-unique name, and drive one `startContinuable` call; roster requests read the parent's direct-child catalog and fold each child's session cut; the two bash notifications are acknowledged.
+Nine request types are answered. Spawn-style requests validate their payload, reserve a sibling-unique name, and drive one `startContinuable` call; roster requests read the parent's direct-child catalog and fold each child's session cut; a background-command completion steers a notice into the owning session, and a result read withdraws it while it is still pending.
 
 | Request type | Behavior |
 |---|---|
@@ -57,8 +57,8 @@ Nine request types are answered. Spawn-style requests validate their payload, re
 | `rlm.collect` | Bounded wait for selected children to settle; a timeout returns snapshots, never an error |
 | `rlm.progress.note` | Record one throttled progress note from a child |
 | `rlm.delete_subagent` | Drain one settled child; a running child is skipped, not deleted |
-| `bash.completed` | Validate and acknowledge a detached command's completion |
-| `bash.consumed` | Validate and acknowledge that a result was read |
+| `bash.completed` | Steer a completion notice into the owning session |
+| `bash.consumed` | Withdraw the pending notice when the kernel read the result first |
 
 ### What can go wrong
 
@@ -91,7 +91,8 @@ Each roster row is a pure fold over one child observation: the `subagentTiming` 
 | [`src/child-facts.ts`](src/child-facts.ts) | Pure folds from one child's events and timing projection to roster facts |
 | [`src/roster.ts`](src/roster.ts) | The process-local roster: name reservations, progress notes, activity stamps |
 | [`src/models.ts`](src/models.ts) | Model-catalog search: exact, prefix, and substring scoring over every provider |
-| [`src/subagents.ts`](src/subagents.ts) | The nine handlers: spawn, roster rows, collect polling, delete, acknowledgements |
+| [`src/subagents.ts`](src/subagents.ts) | The nine handlers: spawn, roster rows, collect polling, delete, completion notices |
+| [`src/bash.ts`](src/bash.ts) | Completion notices: message format, steer source, and the pending-notice board |
 | [`cordis.patch.yml`](cordis.patch.yml) | Bundle layer inserting the bindings beside the kernel and subagent services |
 | — | No runtime invariant companion is published; this package exposes no independent event sequence or mutable data relation beyond its own registration and handler calls. |
 
@@ -131,7 +132,7 @@ These limits define what the bindings cannot do; they are current package constr
 - **The `cwd` spawn kwarg is unsupported** — `AgentOptions` carries no working directory and `startContinuable` does not forward session metadata, so `rlm.create_session` rejects any `cwd` with an explicit error.
 - **`session_dir` and `session_file` are display paths** — they are stable, human-readable locations under the DSH home, but no directory is created and no file is written; the real session log layout is the persistence provider's private business.
 - **No `activity` field on roster rows** — dsh has no projection for a child's current activity kind, so rows omit the field entirely; the runtime treats it as optional.
-- **Bash notifications are acknowledged, not steered** — `bash.completed` and `bash.consumed` validate and reply, but no completion message reaches the parent session.
+- **A delivered completion notice cannot be withdrawn** — `bash.consumed` drops the notice only while it is still pending in the inbox; once a step claims it, the model may read about a result it already fetched.
 - **Goal, compact, and MCP request types are unimplemented** — `goal.*`, `compact.*`, `model.info`, and `mcp.*` have no handler, so a runtime that issues them gets the kernel's loud no-handler error.
 - **The roster is process-local** — a host restart forgets reserved names, progress notes, and activity stamps; names then fall back to catalog labels, and two same-named spawns separated by a restart are not rejected.
 - **Roster reads cost one observation per child** — `rlm.list_subagents` and `rlm.collect` fold every direct child's session cut, so a parent with many children pays many reads per call.
