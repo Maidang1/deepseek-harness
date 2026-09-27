@@ -60,6 +60,22 @@ describe('PythonRlmKernel', () => {
     await service.release('unknown' as SessionId)
   })
 
+  it('binds the runtime conveniences into the namespace at startup', async () => {
+    const service = await kernel(PYTHON)
+    const handle = await service.acquire(agent('k-bindings'))
+    const names = await handle.execute('print(type(rlm).__name__, type(bash).__name__, type(mcp).__name__)')
+    expect(names.status).toBe('ok')
+    expect(names.stdout).toContain('_RLMNamespace')
+    expect(names.stdout).toContain('function')
+    expect(names.stdout).toContain('module')
+    const viaBareBash = await handle.execute("h = bash('echo bootstrap-bound')\nimport time\ntime.sleep(0.3)\nprint(h.output().strip())")
+    expect(viaBareBash.status).toBe('ok')
+    expect(viaBareBash.stdout).toContain('bootstrap-bound')
+    const listing = await handle.listNames()
+    expect(listing).toEqual(['h', 'time'])
+    await service.release('k-bindings' as SessionId)
+  })
+
   it('reports a raising cell with its traceback and keeps serving', async () => {
     const service = await kernel(PYTHON)
     const handle = await service.acquire(agent('k2'))

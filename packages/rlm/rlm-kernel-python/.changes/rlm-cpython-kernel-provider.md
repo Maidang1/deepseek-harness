@@ -1,1 +1,2 @@
 - Added `@deepseek-ai/dsh-rlm-kernel-python`: a CPython provider of the persistent-kernel seam, running one interpreter per agent session with the runtime bundled in the package.
+- Added a startup bootstrap cell that binds `rlm`, `bash()`, and `mcp` into the kernel's user namespace, so model code calls them without an explicit import.

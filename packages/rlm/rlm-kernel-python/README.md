@@ -43,7 +43,7 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### What the session experiences
 
-`acquire(agent)` spawns `python -u -m rlm.repl` from the package's own `py/` directory, then waits for the `ready` handshake. Cells then run in one namespace that survives turns, a trailing expression is returned as its `repr`, and an `AbortSignal` on the cell raises `KeyboardInterrupt` inside the running code without ending the interpreter. `bash("command")` inside a cell spawns a real subprocess and needs no host round trip. Output that arrives with no cell attribution — bytes written directly to a file descriptor by a child process — is retained and attached to whichever cell is running.
+`acquire(agent)` spawns `python -u -m rlm.repl` from the package's own `py/` directory, waits for the `ready` handshake, then runs a bootstrap cell that binds the runtime's conveniences — the `rlm` namespace, `bash()`, and the `mcp` module — into the user namespace, so model code calls them without an explicit import. A failed bootstrap fails the acquire, not the first user cell. Cells then run in one namespace that survives turns, a trailing expression is returned as its `repr`, and an `AbortSignal` on the cell raises `KeyboardInterrupt` inside the running code without ending the interpreter. `bash("command")` inside a cell spawns a real subprocess and needs no host round trip. Output that arrives with no cell attribution — bytes written directly to a file descriptor by a child process — is retained and attached to whichever cell is running.
 
 ### Teardown and recovery
 

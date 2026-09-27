@@ -26,10 +26,12 @@ import { PythonRlmKernel } from '../src/index.ts'
 interface FakeOptions {
   /** Set when the child has no stdin pipe at all. */
   readonly noStdin?: boolean
-  /** Set when every stdin write must fail, as a closed pipe does. */
+  /** Set when every post-bootstrap stdin write must fail, as a closed pipe does. */
   readonly writeFailure?: unknown
   /** Set when the child has no stdout pipe at all. */
   readonly noStdout?: boolean
+  /** Status the bootstrap cell settles with; `error-silent` settles error without an error event. */
+  readonly bootstrapStatus?: 'ok' | 'error' | 'error-silent'
 }
 
 /** A `child_process.ChildProcess` stand-in wired to `PassThrough` pipes. */
@@ -53,8 +55,21 @@ class FakeChild extends EventEmitter {
     const pipe = this.stdin
     const write = pipe.write.bind(pipe)
     pipe.write = ((chunk: Uint8Array | string) => {
-      if ('writeFailure' in options) throw options.writeFailure
-      this.written.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'))
+      const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
+      // The startup bootstrap must complete for acquire to resolve, so only
+      // later writes bend to a refusal.
+      if ('writeFailure' in options && !text.includes('_rlm_bootstrap')) throw options.writeFailure
+      this.written.push(text)
+      if (text.includes('_rlm_bootstrap')) {
+        // Answer the bootstrap cell with the configured status; the frame id is reserved.
+        const status = options.bootstrapStatus ?? 'ok'
+        setImmediate(() => {
+          if (status === 'error') {
+            this.emitEvent({ event: 'error', id: '0', ename: 'RuntimeError', evalue: 'bootstrap exploded', traceback: [] })
+          }
+          this.emitEvent({ event: 'done', id: '0', status: status === 'error-silent' ? 'error' : status })
+        })
+      }
       return write(chunk)
     }) as typeof pipe.write
   }
@@ -412,7 +427,7 @@ describe('PythonRlmKernel maintenance requests', () => {
     await ctx.fiber.dispose()
   })
 
-  it('rejects maintenance work with no writable stdin', async () => {
+  it('rejects startup with no writable stdin', async () => {
     const child = useChild({ noStdin: true })
     const ctx = new Context()
     await ctx.plugin(PythonRlmKernel, { pythonBin: 'python3', shutdownGraceMs: 10 })
@@ -420,8 +435,32 @@ describe('PythonRlmKernel maintenance requests', () => {
     const acquiring = service.acquire(agent('s1'))
     await Promise.resolve()
     child.announce()
-    const handle = await acquiring
-    await expect(handle.listNames()).rejects.toThrow('kernel has no writable stdin')
+    await expect(acquiring).rejects.toThrow('kernel has no writable stdin')
+    await ctx.fiber.dispose()
+  })
+
+  it('fails startup when the bootstrap cell raises', async () => {
+    const child = useChild({ bootstrapStatus: 'error' })
+    const ctx = new Context()
+    await ctx.plugin(PythonRlmKernel, { pythonBin: 'python3', shutdownGraceMs: 10 })
+    const service = ctx.get('rlmKernel') as PythonRlmKernel
+    const acquiring = service.acquire(agent('s1'))
+    await Promise.resolve()
+    child.announce()
+    await expect(acquiring).rejects.toThrow('rlm-kernel-python: runtime bootstrap failed: bootstrap exploded')
+    expect(child.signals).toEqual(['SIGKILL'])
+    await ctx.fiber.dispose()
+  })
+
+  it('fails startup on a bootstrap done error without detail events', async () => {
+    const child = useChild({ bootstrapStatus: 'error-silent' })
+    const ctx = new Context()
+    await ctx.plugin(PythonRlmKernel, { pythonBin: 'python3', shutdownGraceMs: 10 })
+    const service = ctx.get('rlmKernel') as PythonRlmKernel
+    const acquiring = service.acquire(agent('s1'))
+    await Promise.resolve()
+    child.announce()
+    await expect(acquiring).rejects.toThrow('rlm-kernel-python: runtime bootstrap failed:')
     await ctx.fiber.dispose()
   })
 })

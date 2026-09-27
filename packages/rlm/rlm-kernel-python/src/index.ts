@@ -62,6 +62,22 @@ const DEFAULT_SHUTDOWN_GRACE_MS = 3_000
 /** Cap on stderr bytes retained for a startup diagnosis. */
 const STDERR_DIAGNOSTIC_CHARS = 4_096
 
+/** Request id of the startup bootstrap cell, reserved so consumer cells keep sequential ids. */
+const BOOTSTRAP_REQUEST_ID = '0'
+
+/**
+ * Bootstrap cell binding the runtime's model-facing conveniences into the
+ * fresh user namespace. The snapshot and `list_names` filters already skip
+ * these names, so they never leak into durable state.
+ */
+const BOOTSTRAP_CODE = [
+  'import rlm as _rlm_bootstrap',
+  'rlm = _rlm_bootstrap.rlm',
+  'bash = _rlm_bootstrap.bash',
+  'import rlm.mcp as mcp',
+  'del _rlm_bootstrap',
+].join('\n')
+
 /** Validated plugin configuration; every cap is changeable from `cordis.yml`. */
 export interface Config {
   /** CPython command: an absolute path or a bare name resolved through `PATH`. */
@@ -184,6 +200,7 @@ export class PythonRlmKernel extends RlmKernel {
     this.entries.set(agent.id, entry)
     try {
       await this.start(entry, options?.pythonPath ?? [])
+      await this.runBootstrap(entry)
     } catch (error: unknown) {
       if (this.entries.get(agent.id) === entry) this.entries.delete(agent.id)
       await this.disposeEntry(entry)
@@ -215,6 +232,23 @@ export class PythonRlmKernel extends RlmKernel {
       listNames: () => this.runListNames(entry),
       dispose: () => this.disposeEntry(entry),
     }
+  }
+
+  /**
+   * Bind the runtime's conveniences (`rlm`, `bash`, `mcp`) into the fresh
+   * namespace, failing startup when the bootstrap cell itself fails.
+   *
+   * @param entry - the kernel entry that just completed its handshake.
+   */
+  private async runBootstrap(entry: KernelEntry): Promise<void> {
+    const settled = this.register<RlmCellResult>(entry, BOOTSTRAP_REQUEST_ID, 'execute')
+    this.submit(entry, { type: 'execute', id: BOOTSTRAP_REQUEST_ID, code: BOOTSTRAP_CODE }, BOOTSTRAP_REQUEST_ID)
+    const cell = await settled
+    if (cell.status === 'ok') return
+    const details = [cell.error?.evalue, cell.stderr.trim()]
+      .filter(text => text !== undefined && text !== '')
+      .join('\n')
+    throw new RlmKernelError(`rlm-kernel-python: runtime bootstrap failed: ${details}`)
   }
 
   /**

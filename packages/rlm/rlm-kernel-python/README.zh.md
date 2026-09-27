@@ -43,7 +43,7 @@ kind: "package-reference"
 
 ### What the session experiences
 
-`acquire(agent)` 从包自带的 `py/` 目录 spawn `python -u -m rlm.repl`，然后等待 `ready` 握手。随后各 cell 在一个跨轮存活的命名空间中运行，尾表达式以其 `repr` 返回，cell 上的 `AbortSignal` 会在运行中的代码内引发 `KeyboardInterrupt` 而不结束解释器。cell 内的 `bash("command")` spawn 真实子进程，不需要 host 往返。以无归属方式到达的输出——子进程直接写文件描述符的字节——会被保留并附着到正在运行的 cell 上。
+`acquire(agent)` 从包自带的 `py/` 目录 spawn `python -u -m rlm.repl`，等待 `ready` 握手，然后执行一个 bootstrap cell，把运行时的便利设施——`rlm` 命名空间、`bash()` 与 `mcp` 模块——绑定进用户命名空间，模型代码无需显式 import 即可调用。bootstrap 失败会让 acquire 失败，而不是拖到第一个用户 cell 才暴露。随后各 cell 在一个跨轮存活的命名空间中运行，尾表达式以其 `repr` 返回，cell 上的 `AbortSignal` 会在运行中的代码内引发 `KeyboardInterrupt` 而不结束解释器。cell 内的 `bash("command")` spawn 真实子进程，不需要 host 往返。以无归属方式到达的输出——子进程直接写文件描述符的字节——会被保留并附着到正在运行的 cell 上。
 
 ### Teardown and recovery
 
