@@ -41,6 +41,7 @@ The common path is a kernel provider, a continuable spawn provider, the session-
 |---|---|---|
 | `providerName` | `spawn` | Registry name of the continuable spawn provider children are created through |
 | `dshHome` | `''` | DSH home directory override; empty resolves through `DSH_HOME` or `~/.dsh` |
+| `mcpServersFile` | `''` | JSON file declaring the MCP servers the kernel may connect to (name → server config); empty resolves to `<dshHome>/mcp-servers.json`, and a missing or invalid file reads as no declared servers |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-rlm-bindings) is the exhaustive source for every accepted field. The `providerName` must name a provider registered on `ctx.subagents` whose continuable-creation capability is present, or every spawn fails with the subagent service's own error.
 
@@ -156,7 +157,7 @@ These limits define what the bindings cannot do; they are current package constr
 - **No `activity` field on roster rows** — dsh has no projection for a child's current activity kind, so rows omit the field entirely; the runtime treats it as optional.
 - **A delivered completion notice cannot be withdrawn** — `bash.consumed` drops the notice only while it is still pending in the inbox; once a step claims it, the model may read about a result it already fetched.
 - **`mcp.begin_login` is not registered by default** — the composition has no interactive OAuth surface, so the handler is omitted entirely and the kernel raises its own unsupported-request error; a deployment that wires a `beginLogin` callback gets the handler.
-- **`mcp.refresh` and `mcp.config` have no backing store by default** — without a wired credential store every refresh fails loud, and without a wired server catalog every server reads as undeclared, so the kernel raises its own "not declared" `KeyError`.
+- **`mcp.refresh` has no backing credential store by default** — without a wired store every refresh fails loud. `mcp.config` reads the declared servers from `mcpServersFile` (default `<dshHome>/mcp-servers.json`), re-read on every request; a server missing from that file reads as undeclared, so the kernel raises its own "not declared" `KeyError`.
 - **A goal's `token_budget` is validated but never enforced** — the goal substrate budgets in rounds, not tokens, so the accepted budget is dropped; `tokens_used` and `time_used_seconds` always report zero, and a goal blocked with the `round-limit` code maps to `budget_limited` while any other block maps to `paused`.
 - **`compact.run` accepts but never forwards custom instructions** — the compaction seam takes no instruction text, the scheduled compaction runs without a pre-flight pressure check, and a compacted session is not resumed automatically beyond the notice the summary leaves.
 - **Refinement has no separate planner pass** — the turn boundary steers a notice and the agent performs the refinement itself; pending requests live in process memory, so a host restart drops them.

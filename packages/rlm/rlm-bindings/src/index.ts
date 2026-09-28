@@ -32,7 +32,7 @@ import { createCompactHostHandlers } from './compact.ts'
 import type { CompactBackend } from './compact.ts'
 import { createGoalHostHandlers } from './goal.ts'
 import { HeartbeatScheduler, HeartbeatStore, createHeartbeatHostHandlers } from './heartbeat.ts'
-import { createMcpHostHandlers } from './mcp.ts'
+import { createMcpHostHandlers, readMcpServersFile } from './mcp.ts'
 import { createAgentMessageHostHandlers } from './message.ts'
 import { createModelInfoHostHandlers } from './model-info.ts'
 import { createAgentObserveHostHandlers } from './observe.ts'
@@ -49,12 +49,19 @@ export interface Config {
   providerName?: string
   /** DSH home directory override; empty resolves through `DSH_HOME` or `~/.dsh`. */
   dshHome?: string
+  /**
+   * JSON file declaring the MCP servers the kernel may connect to (name →
+   * server config). Empty resolves to `<dshHome>/mcp-servers.json`; a
+   * missing or invalid file reads as no declared servers.
+   */
+  mcpServersFile?: string
 }
 
 /** Validated plugin configuration for the RLM host bindings. */
 export const Config: z<Config> = z.object({
   providerName: z.string().default('spawn'),
   dshHome: z.string().default(''),
+  mcpServersFile: z.string().default(''),
 })
 
 /**
@@ -114,7 +121,13 @@ export function apply(ctx: Context, config: Config = {}): void {
     ...createGoalHostHandlers({ goals: ctx.goals }),
     ...createCompactHostHandlers({ compaction: scopedCompaction, usage: ctx.tokenMeter, models: ctx.llm }),
     ...createModelInfoHostHandlers({ models: ctx.llm }),
-    ...createMcpHostHandlers({}),
+    ...createMcpHostHandlers({
+      servers: () => readMcpServersFile(
+        config.mcpServersFile === undefined || config.mcpServersFile.trim().length === 0
+          ? join(resolveDshHome(dshHome), 'mcp-servers.json')
+          : config.mcpServersFile,
+      ),
+    }),
     ...createAgentMessageHostHandlers({ agents: ctx.agents, subagents: ctx.subagents, roster }),
     ...createAgentObserveHostHandlers({ agents: ctx.agents, subagents: ctx.subagents, roster, observations }),
     ...createHeartbeatHostHandlers({ heartbeats: scheduler }),

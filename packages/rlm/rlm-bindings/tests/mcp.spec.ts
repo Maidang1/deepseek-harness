@@ -5,7 +5,11 @@ import { unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { Session, SessionId, SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session'
 import type { RlmHostReplyData, RlmHostRequestContext, RlmHostRequestEvent } from '@deepseek-ai/dsh-rlm-kernel'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import { createMcpHostHandlers } from '../src/mcp.ts'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { createMcpHostHandlers, readMcpServersFile } from '../src/mcp.ts'
 import type { McpBindingDeps, McpServerConfig } from '../src/mcp.ts'
 
 function agent(id: string): Agent {
@@ -165,5 +169,51 @@ describe('mcp.begin_login', () => {
     const handlers = createMcpHostHandlers({ beginLogin: () => Promise.resolve() })
     await expect(call(handlers['mcp.begin_login']!, request({})))
       .rejects.toThrow('mcp.begin_login requires a server')
+  })
+})
+
+describe('readMcpServersFile', () => {
+  it('reads a declared server map', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mcp-servers-'))
+    const file = join(dir, 'servers.json')
+    writeFileSync(file, JSON.stringify({
+      web: { type: 'http', url: 'https://example.com/mcp' },
+      local: { type: 'stdio', command: 'mcp-server', args: ['--fast'] },
+    }))
+    expect(readMcpServersFile(file)).toEqual({
+      web: { type: 'http', url: 'https://example.com/mcp' },
+      local: { type: 'stdio', command: 'mcp-server', args: ['--fast'] },
+    })
+  })
+
+  it('reads a missing file as no declared servers', () => {
+    expect(readMcpServersFile(join(tmpdir(), 'mcp-servers-missing', 'nope.json'))).toEqual({})
+  })
+
+  it('reads invalid JSON as no declared servers', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'mcp-servers-')), 'bad.json')
+    writeFileSync(file, '{not json')
+    expect(readMcpServersFile(file)).toEqual({})
+  })
+
+  it('reads a non-object document as no declared servers', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'mcp-servers-')), 'array.json')
+    writeFileSync(file, JSON.stringify([{ type: 'stdio', command: 'x' }]))
+    expect(readMcpServersFile(file)).toEqual({})
+  })
+
+  it('skips entries that are not server configs', () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'mcp-servers-')), 'mixed.json')
+    writeFileSync(file, JSON.stringify({
+      good: { type: 'http', url: 'https://example.com/mcp' },
+      noType: { url: 'https://example.com/mcp' },
+      badType: { type: 'sse' },
+      notObject: 'nope',
+      list: [],
+      nil: null,
+    }))
+    expect(readMcpServersFile(file)).toEqual({
+      good: { type: 'http', url: 'https://example.com/mcp' },
+    })
   })
 })

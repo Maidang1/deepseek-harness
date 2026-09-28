@@ -1,0 +1,1 @@
+- added the `mcpServersFile` option to the RLM host bindings so the kernel reads declared MCP servers from a JSON file

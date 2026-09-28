@@ -2352,6 +2352,12 @@ export interface Config {
   providerName?: string
   /** DSH home directory override; empty resolves through `DSH_HOME` or `~/.dsh`. */
   dshHome?: string
+  /**
+   * JSON file declaring the MCP servers the kernel may connect to (name →
+   * server config). Empty resolves to `<dshHome>/mcp-servers.json`; a
+   * missing or invalid file reads as no declared servers.
+   */
+  mcpServersFile?: string
 }
 ```
 

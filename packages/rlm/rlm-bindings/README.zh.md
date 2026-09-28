@@ -41,6 +41,7 @@ kind: "package-reference"
 |---|---|---|
 | `providerName` | `spawn` | 子代理创建所经的可持续 spawn provider 的注册名 |
 | `dshHome` | `''` | DSH home 目录覆盖；空值经 `DSH_HOME` 或 `~/.dsh` 解析 |
+| `mcpServersFile` | `''` | 声明内核可连接的 MCP 服务器的 JSON 文件（名称 → 服务器配置）；空值解析为 `<dshHome>/mcp-servers.json`，文件缺失或无效时按无声明服务器处理 |
 
 生成的 [configuration catalog](../../../docs/config-catalog.zh.md#deepseek-aidsh-rlm-bindings) 是每个可接受字段的穷尽来源。`providerName` 必须指向 `ctx.subagents` 上已注册、且具备可持续创建能力的 provider，否则每次 spawn 都以 subagent 服务自身的错误失败。
 
@@ -156,7 +157,7 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 - **No `activity` field on roster rows** — dsh 没有表达子代理当前活动种类的投影，因此行整体省略该字段；运行时把它当作可选。
 - **A delivered completion notice cannot be withdrawn** — `bash.consumed` 只在通知仍 pending 于收件箱时撤回它；一旦被某个 step 领取，模型可能读到一条它已经取过的结果的通知。
 - **`mcp.begin_login` is not registered by default** — 组合内没有交互式 OAuth 面，因此该 handler 整体不注册，由内核抛出自己的不支持请求错误；部署接入 `beginLogin` 回调后才有该 handler。
-- **`mcp.refresh` and `mcp.config` have no backing store by default** — 没有接入凭证存储时每次 refresh 都大声失败；没有接入 server 目录时每个 server 都读作未声明，由内核抛出自己的「未声明」`KeyError`。
+- **`mcp.refresh` has no backing credential store by default** — 没有接入凭证存储时每次 refresh 都大声失败。`mcp.config` 从 `mcpServersFile`（默认 `<dshHome>/mcp-servers.json`）读取已声明的 server，每次请求重新读盘；不在该文件中的 server 读作未声明，由内核抛出自己的「未声明」`KeyError`。
 - **A goal's `token_budget` is validated but never enforced** — 目标底座按轮数而非 token 预算，被接受的预算直接丢弃；`tokens_used` 与 `time_used_seconds` 恒报零；以 `round-limit` 代码阻塞的目标映射为 `budget_limited`，其余阻塞映射为 `paused`。
 - **`compact.run` accepts but never forwards custom instructions** — 压缩 seam 不接受指令文本，排定的压缩不做预检压力检查，被压缩的会话除摘要留下的通知外不会自动 resume。
 - **Refinement has no separate planner pass** — 轮次边界 steer 一条通知后由 agent 自己执行精炼；pending 请求留在进程内存里，宿主重启即丢弃。

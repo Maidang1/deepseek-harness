@@ -13,6 +13,8 @@ import type {
   RlmHostRequestHandler,
   RlmHostRequestHandlers,
 } from '@deepseek-ai/dsh-rlm-kernel'
+import { readFileSync } from 'node:fs'
+
 import { ok } from './read.ts'
 
 /** One user-declared Streamable HTTP MCP server, in the kernel client's wire shape. */
@@ -65,6 +67,38 @@ export type McpStdioServerConfig = {
 
 /** User-declared MCP server configuration the kernel connects with. */
 export type McpServerConfig = McpHttpServerConfig | McpStdioServerConfig
+
+/** Structural guard for one entry of the servers file: a plain object with a known transport. */
+function isMcpServerConfig(value: unknown): value is McpServerConfig {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  if (!('type' in value)) return false
+  return value.type === 'http' || value.type === 'stdio'
+}
+
+/**
+ * Reads the user-declared MCP server map from a JSON file. A missing,
+ * unreadable, or structurally invalid file reads as an empty map, so a
+ * broken file routes every server to the kernel's own "not declared" error
+ * instead of failing the host. Re-read on every call, so editing the file
+ * reaches the next kernel connection without a plugin restart.
+ *
+ * @param path - absolute path of the JSON file holding name → server config.
+ * @returns the declared servers, or an empty map when none can be read.
+ */
+export function readMcpServersFile(path: string): Record<string, McpServerConfig> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    return {}
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
+  const servers: Record<string, McpServerConfig> = {}
+  for (const [name, value] of Object.entries(parsed)) {
+    if (isMcpServerConfig(value)) servers[name] = value
+  }
+  return servers
+}
 
 /** The composition pieces the MCP host handlers need, captured at load. */
 export interface McpBindingDeps {

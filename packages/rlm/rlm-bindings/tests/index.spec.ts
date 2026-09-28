@@ -1,4 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -386,6 +387,47 @@ describe('rlm-bindings plugin', () => {
       { event: 'host_request', id: '1', data: { type: 'rlm_heartbeat.list' } },
       { agent: agent('s1'), signal: new AbortController().signal },
     )).toThrow('corrupt')
+    await ctx.fiber.dispose()
+  })
+})
+
+describe('mcp servers file', () => {
+  function callConfig(kernel: StubKernel) {
+    return kernel.handlers['mcp.config']!(
+      { event: 'host_request', id: '9', data: { type: 'mcp.config', server: 'web' } },
+      { agent: agent('s1'), signal: new AbortController().signal },
+    )
+  }
+
+  it('answers mcp.config from <dshHome>/mcp-servers.json by default', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'rlm-bindings-home-'))
+    writeFileSync(join(home, 'mcp-servers.json'), JSON.stringify({
+      web: { type: 'http', url: 'https://example.com/mcp' },
+    }))
+    const { ctx, kernel } = await setup({ dshHome: home })
+    const reply = await callConfig(kernel)
+    if (reply.status !== 'ok') throw new Error('expected an ok reply')
+    expect(reply.result).toEqual({ type: 'http', url: 'https://example.com/mcp' })
+    await ctx.fiber.dispose()
+  })
+
+  it('prefers an explicit mcpServersFile over the DSH home default', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'rlm-bindings-home-'))
+    const file = join(mkdtempSync(join(tmpdir(), 'rlm-bindings-mcp-')), 'servers.json')
+    writeFileSync(file, JSON.stringify({ web: { type: 'stdio', command: 'mcp-server' } }))
+    const { ctx, kernel } = await setup({ dshHome: home, mcpServersFile: file })
+    const reply = await callConfig(kernel)
+    if (reply.status !== 'ok') throw new Error('expected an ok reply')
+    expect(reply.result).toEqual({ type: 'stdio', command: 'mcp-server' })
+    await ctx.fiber.dispose()
+  })
+
+  it('reads a missing file as no declared servers', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'rlm-bindings-home-'))
+    const { ctx, kernel } = await setup({ dshHome: home })
+    const reply = await callConfig(kernel)
+    if (reply.status !== 'ok') throw new Error('expected an ok reply')
+    expect(reply.result).toEqual({})
     await ctx.fiber.dispose()
   })
 })
