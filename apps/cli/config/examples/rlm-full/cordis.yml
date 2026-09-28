@@ -1,0 +1,86 @@
+# Opt-in RLM full-capability overlay over the shipped Web composition: the
+# persistent Python REPL kernel, its model-facing `python` tool, the harness
+# refinement seam, and the host bindings that answer the runtime's host
+# requests, plus the capability plugins the runtime's goal / compact /
+# schedule / subagent-control / MCP surfaces mirror.
+#
+# The base composition already ships the goal service (`goal`), its tool and
+# command faces (`tool-goal`, `command-goal`), the compaction engine
+# (`compaction-basic`) with `/compact` (`command-compact`), and the subagent
+# control tools (`tool-subagent-control`, `tool-subagent-list-agents`), so
+# this overlay inserts only the rows the shipped tree lacks.
+#
+# Apply with:
+#
+#   dsh web --patch apps/cli/config/examples/rlm-full/cordis.yml
+#
+# The four rlm packages are not dependencies of the dsh CLI installation yet,
+# so their rows address the built entry points by path relative to this file
+# (the same anchoring the loader applies to every relative insert name); the
+# capability plugins ship as CLI dependencies and keep their package names.
+# Build the rlm packages before applying (`node node_modules/tsdown/dist/run.mjs`
+# per package, see each package README), or replace these paths with the bare
+# package names after installing them into the profile with `dsh plugin add`.
+
+- insert:
+    # Persistent CPython REPL kernel: one interpreter per session, registered
+    # as the `ctx.rlmKernel` seam every other RLM row consumes.
+    - id: rlm-kernel-python
+      name: '../../../../../packages/rlm/rlm-kernel-python/lib/index.js'
+      inject: [agents]
+      config:
+        pythonBin: python3
+        pythonPath: []
+        maxOutputChars: 65536
+        startupTimeoutMs: 30000
+        shutdownGraceMs: 3000
+
+    # Harness-state capability seam (`ctx.rlmHarness`). The package ships the
+    # abstract seam; this row registers it so consumers resolve loud at
+    # startup, and a concrete refiner provider replaces the row by id later.
+    - id: rlm-harness
+      name: '../../../../../packages/rlm/rlm-harness/lib/index.js'
+
+    # Model-facing `python` tool over the session kernel.
+    - id: tool-python
+      name: '../../../../../packages/rlm/tool-python/lib/index.js'
+      inject: [tools, rlmKernel]
+      config:
+        maxCodeChars: 100000
+
+    # Host bindings answering the runtime's host requests (spawn, collect,
+    # progress notes, model search, goals, compaction, family messaging and
+    # observation, refinement, heartbeats) through the kernel, subagent, llm,
+    # session-query, agent-registry, goal, and token-meter services; a
+    # missing provider fails loud at startup. Compaction is resolved from
+    # the calling agent's preset scope, not injected.
+    - id: rlm-bindings
+      name: '../../../../../packages/rlm/rlm-bindings/lib/index.js'
+      inject: [rlmKernel, subagents, llm, sessionQuery, agents, goals, tokenMeter]
+      config:
+        providerName: spawn
+
+    # Durable one-shot and fixed-rate reminders, plus the request-local time
+    # context their `at` selectors interpret against. The client surface
+    # ships disabled in the Web composition and is enabled below.
+    - id: time-context
+      name: '@deepseek-ai/dsh-time-context'
+
+    - id: schedule
+      name: '@deepseek-ai/dsh-schedule'
+
+    # External MCP servers as model-facing tools (`mcp__<server>__<tool>`).
+    # Reference instance for @modelcontextprotocol/server-everything: install
+    # the pinned executable first; a missing one logs at boot and retries in
+    # the background without failing startup.
+    - id: mcp-everything
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: everything
+        transport: stdio
+        command: mcp-server-everything
+        cwd: !!js process.cwd()
+
+# The Schedule catalog surface ships disabled in the Web composition.
+- id: ui-schedule
+  disabled: false
