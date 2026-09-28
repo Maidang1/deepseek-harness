@@ -228,6 +228,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/workflow/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
   'packages/rlm/rlm-kernel-python': { kind: 'indirect', reason: 'The provider drives a CPython subprocess; the python tool owns every model-facing rendering of a cell.' },
   'packages/rlm/rlm-bindings': { kind: 'indirect', reason: 'The host bindings answer the Python runtime\'s host requests; the python tool owns every model-facing rendering of the returned data.' },
+  'packages/rlm/rlm-harness-local': { kind: 'indirect', reason: 'The provider persists harness state under the DSH home; the python tool and the host bindings own every model-facing rendering of the stored entries.' },
 }
 
 interface Failure {

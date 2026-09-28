@@ -1,0 +1,12 @@
+# Local JSON-file harness-state provider. The row registers the concrete
+# `ctx.rlmHarness` refiner beside the kernel; it injects nothing because the
+# stores live under the DSH home it resolves from its own config, so a
+# deployment can insert it anywhere a composition needs refinable harness
+# state. A second harness provider row fails loud at startup, which is
+# Cordis' standard duplicate-service behavior.
+
+- insert:
+    - id: rlm-harness-local
+      name: '@deepseek-ai/dsh-rlm-harness-local'
+      config:
+        dshHome: ''

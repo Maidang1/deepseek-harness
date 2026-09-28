@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM Harness（本地 JSON）",
+    "description": "把可精炼的 harness 状态以 JSON 存储在 DSH home 下，全局一份、每个会话一份。"
+  }
+}

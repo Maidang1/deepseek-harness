@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "RLM Harness (Local JSON)",
+    "description": "Persist refinable harness state as JSON stores under the DSH home, one global and one per session."
+  }
+}

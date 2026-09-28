@@ -320,6 +320,7 @@
     { "path": "./packages/rlm/rlm-kernel" },
     { "path": "./packages/rlm/rlm-kernel-python" },
     { "path": "./packages/rlm/rlm-harness" },
+    { "path": "./packages/rlm/rlm-harness-local" },
     { "path": "./packages/rlm/tool-python" },
     { "path": "./packages/rlm/rlm-bindings" },
     { "path": "./packages/core/tools" },

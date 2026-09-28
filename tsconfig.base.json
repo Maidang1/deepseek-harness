@@ -421,6 +421,7 @@
       "@deepseek-ai/dsh-repeat-tool-reminder": ["./packages/guard/repeat-tool-reminder/src"],
       "@deepseek-ai/dsh-rlm-bindings": ["./packages/rlm/rlm-bindings/src"],
       "@deepseek-ai/dsh-rlm-harness": ["./packages/rlm/rlm-harness/src"],
+      "@deepseek-ai/dsh-rlm-harness-local": ["./packages/rlm/rlm-harness-local/src"],
       "@deepseek-ai/dsh-rlm-kernel": ["./packages/rlm/rlm-kernel/src"],
       "@deepseek-ai/dsh-rlm-kernel-python": ["./packages/rlm/rlm-kernel-python/src"],
       "@deepseek-ai/dsh-sandbox": ["./packages/sandbox/sandbox/src"],

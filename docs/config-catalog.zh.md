@@ -2359,6 +2359,20 @@ export interface Config {
 
 来源： [`packages/rlm/rlm-bindings/src/index.ts:47`](../packages/rlm/rlm-bindings/src/index.ts)
 
+<a id="deepseek-aidsh-rlm-harness-local"></a>
+
+## `@deepseek-ai/dsh-rlm-harness-local`
+
+```ts config-catalog
+/** Plugin configuration for the Local harness refiner. */
+export interface Config {
+  /** DSH home directory override; empty resolves through `DSH_HOME` or `~/.dsh`. */
+  dshHome?: string
+}
+```
+
+来源： [`packages/rlm/rlm-harness-local/src/index.ts:65`](../packages/rlm/rlm-harness-local/src/index.ts)
+
 <a id="deepseek-aidsh-rlm-kernel-python"></a>
 
 ## `@deepseek-ai/dsh-rlm-kernel-python`

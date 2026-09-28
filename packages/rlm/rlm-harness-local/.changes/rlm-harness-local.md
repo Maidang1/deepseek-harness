@@ -1,0 +1,1 @@
+- Added `@deepseek-ai/dsh-rlm-harness-local`: a JSON-file provider for the `ctx.rlmHarness` seam, with one global store and one store per session under the DSH home.
