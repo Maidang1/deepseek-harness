@@ -18,13 +18,25 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../compaction/compaction"
+    },
+    {
       "path": "../../core/agent"
     },
     {
       "path": "../../core/session"
     },
     {
+      "path": "../../goal/goal"
+    },
+    {
+      "path": "../../preset/agent-preset-registry"
+    },
+    {
       "path": "../../llm/llm"
+    },
+    {
+      "path": "../../llm/token-meter"
     },
     {
       "path": "../../session-query/session-query"

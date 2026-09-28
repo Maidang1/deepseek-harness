@@ -1,0 +1,1 @@
+- Added the goal, compact, model-info, MCP, agent-message, agent-observe, heartbeat, and refine host bindings to `@deepseek-ai/dsh-rlm-bindings`, wired through the `agents`, `goals`, `compaction`, and `tokenMeter` services.
