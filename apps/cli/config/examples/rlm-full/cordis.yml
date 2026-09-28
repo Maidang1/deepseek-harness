@@ -35,11 +35,13 @@
         startupTimeoutMs: 30000
         shutdownGraceMs: 3000
 
-    # Harness-state capability seam (`ctx.rlmHarness`). The package ships the
-    # abstract seam; this row registers it so consumers resolve loud at
-    # startup, and a concrete refiner provider replaces the row by id later.
-    - id: rlm-harness
-      name: '../../../../../packages/rlm/rlm-harness/lib/index.js'
+    # Harness-state capability (`ctx.rlmHarness`): the concrete local
+    # JSON-file provider. A second harness provider row fails loud at
+    # startup (duplicate service), so this row stands alone.
+    - id: rlm-harness-local
+      name: '../../../../../packages/rlm/rlm-harness-local/lib/index.js'
+      config:
+        dshHome: ''
 
     # Model-facing `python` tool over the session kernel.
     - id: tool-python
