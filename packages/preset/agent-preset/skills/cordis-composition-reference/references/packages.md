@@ -321,7 +321,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 
 | Package | Config | Description |
 |---|---|---|
-| `@deepseek-ai/dsh-rlm-bindings` | yes | Host-side bindings answering the RLM runtime's subagent and model host requests |
+| `@deepseek-ai/dsh-rlm-bindings` | yes | Host-side bindings answering the RLM runtime's host requests against a composition's services |
 | `@deepseek-ai/dsh-rlm-kernel-python` | yes | CPython subprocess provider for the persistent REPL kernel capability seam |
 | `@deepseek-ai/dsh-tool-python` | yes | Model-facing persistent Python REPL tool for the DeepSeek Harness |
 

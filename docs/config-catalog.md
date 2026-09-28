@@ -2343,7 +2343,7 @@ Source: [`packages/guard/repeat-tool-reminder/src/index.ts:35`](../packages/guar
 
 ## `@deepseek-ai/dsh-rlm-bindings`
 
-Requires: `rlmKernel` · `subagents` · `llm` · `sessionQuery`
+Requires: `rlmKernel` · `subagents` · `llm` · `sessionQuery` · `agents` · `goals` · `tokenMeter`
 
 ```ts config-catalog
 /** Plugin configuration for the RLM host bindings. */
@@ -2355,7 +2355,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/rlm/rlm-bindings/src/index.ts:23`](../packages/rlm/rlm-bindings/src/index.ts)
+Source: [`packages/rlm/rlm-bindings/src/index.ts:47`](../packages/rlm/rlm-bindings/src/index.ts)
 
 <a id="deepseek-aidsh-rlm-kernel-python"></a>
 
@@ -2379,7 +2379,7 @@ export interface Config {
 
 Depends on: `Volatile` (`@deepseek-ai/cordis`)
 
-Source: [`packages/rlm/rlm-kernel-python/src/index.ts:66`](../packages/rlm/rlm-kernel-python/src/index.ts)
+Source: [`packages/rlm/rlm-kernel-python/src/index.ts:82`](../packages/rlm/rlm-kernel-python/src/index.ts)
 
 <a id="deepseek-aidsh-sandbox-local"></a>
 

@@ -2345,7 +2345,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-rlm-bindings`
 
-需要： `rlmKernel` · `subagents` · `llm` · `sessionQuery`
+需要： `rlmKernel` · `subagents` · `llm` · `sessionQuery` · `agents` · `goals` · `tokenMeter`
 
 ```ts config-catalog
 /** Plugin configuration for the RLM host bindings. */
@@ -2357,7 +2357,7 @@ export interface Config {
 }
 ```
 
-来源： [`packages/rlm/rlm-bindings/src/index.ts:23`](../packages/rlm/rlm-bindings/src/index.ts)
+来源： [`packages/rlm/rlm-bindings/src/index.ts:47`](../packages/rlm/rlm-bindings/src/index.ts)
 
 <a id="deepseek-aidsh-rlm-kernel-python"></a>
 
@@ -2381,7 +2381,7 @@ export interface Config {
 
 依赖： `Volatile`（`@deepseek-ai/cordis`）
 
-来源： [`packages/rlm/rlm-kernel-python/src/index.ts:66`](../packages/rlm/rlm-kernel-python/src/index.ts)
+来源： [`packages/rlm/rlm-kernel-python/src/index.ts:82`](../packages/rlm/rlm-kernel-python/src/index.ts)
 
 <a id="deepseek-aidsh-sandbox-local"></a>
 
